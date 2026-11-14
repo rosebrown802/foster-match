@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foster Match</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a coordinator's workbench. Animals waiting on the left, ranked foster homes on the right. */
+:root{
+  --bg:#f3f5f2; --surface:#ffffff; --ink:#1c2622; --muted:#5d6b64; --line:#d6ddd7;
+  --accent:#1f6b52; --accent-ink:#ffffff; --accent-soft:#dcebe4;
+  --good:#1f6b52; --warn:#9a5b00; --warn-soft:#f6e7c8; --bad:#a23a2c; --bad-soft:#f5ddd8;
+  --display:"Bricolage Grotesque","Trebuchet MS",sans-serif; --body:"Source Sans 3","Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141a17; --surface:#1d2521; --ink:#e8eee9; --muted:#9aa9a1; --line:#33403a;
+  --accent:#6fc7a4; --accent-ink:#0f1a15; --accent-soft:#24382f;
+  --good:#6fc7a4; --warn:#e3b35a; --warn-soft:#3b3220; --bad:#ee9483; --bad-soft:#40251f; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#141a17; --surface:#1d2521; --ink:#e8eee9; --muted:#9aa9a1; --line:#33403a;
+  --accent:#6fc7a4; --accent-ink:#0f1a15; --accent-soft:#24382f;
+  --good:#6fc7a4; --warn:#e3b35a; --warn-soft:#3b3220; --bad:#ee9483; --bad-soft:#40251f; color-scheme:dark;}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--body)}
+.wrap{max-width:1120px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:baseline;justify-content:space-between}
+h1{font:700 30px/1.1 var(--display);margin:0;text-wrap:balance}
+h1 span{color:var(--accent)}
+.tag{color:var(--muted);margin:4px 0 0;max-width:60ch}
+.demo{background:var(--warn-soft);color:var(--warn);border-radius:6px;padding:4px 10px;font-weight:600;font-size:14px}
+nav{display:flex;flex-wrap:wrap;gap:6px;margin:20px 0 16px;border-bottom:1px solid var(--line)}
+nav a{padding:8px 14px;color:var(--muted);text-decoration:none;font-weight:600;border-bottom:3px solid transparent;margin-bottom:-1px}
+nav a[aria-current="page"]{color:var(--ink);border-color:var(--accent)}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h2{font:700 20px/1.2 var(--display);margin:0 0 4px;text-wrap:balance}
+h3{font:700 17px/1.2 var(--display);margin:0}
+.sub{color:var(--muted);margin:0 0 12px}
+.bench{display:grid;grid-template-columns:minmax(260px,340px) 1fr;gap:20px;align-items:start}
+@media (max-width:760px){.bench{grid-template-columns:1fr}}
+.list{display:flex;flex-direction:column;gap:8px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+select,input[type=text],input[type=number]{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.pick{display:block;width:100%;text-align:left;font:inherit;color:inherit;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer}
+.pick:hover{border-color:var(--accent)}
+.pick[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.pick.urgent{border-left-color:var(--bad)}
+.row{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;justify-content:space-between}
+.meta{color:var(--muted);font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.chip{font-size:13px;font-weight:600;border-radius:999px;padding:1px 9px;background:var(--bg);border:1px solid var(--line);color:var(--muted)}
+.chip.bad{background:var(--bad-soft);border-color:transparent;color:var(--bad)}
+.chip.warn{background:var(--warn-soft);border-color:transparent;color:var(--warn)}
+.chip.good{background:var(--accent-soft);border-color:transparent;color:var(--good)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.results{display:flex;flex-direction:column;gap:10px}
+.score{display:flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums;font-weight:600}
+.bar{width:90px;height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+ul.why{margin:8px 0 0;padding-left:18px}
+ul.why li{margin:2px 0}
+ul.why li.minus{color:var(--warn)}
+details{margin-top:6px}
+summary{cursor:pointer;font-weight:600;color:var(--muted);padding:6px 0}
+.no{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:space-between;padding:8px 0;border-top:1px solid var(--line)}
+.no span:last-child{color:var(--bad)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 16px;margin-top:10px}
+label{display:flex;flex-direction:column;gap:3px;font-weight:600;font-size:14px}
+label.check{flex-direction:row;align-items:center;gap:8px;font-weight:400;font-size:16px}
+button.go{font:600 16px var(--body);background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:9px 16px;cursor:pointer;justify-self:start}
+.note{color:var(--good);font-weight:600;margin:8px 0 0}
+.how{max-width:68ch}
+.how li{margin:6px 0}
+footer{margin-top:32px;color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Foster <span>Match</span></h1>
+    <p class="tag">Pick an animal that needs a foster home. See which homes fit, ranked, with the reasons.</p>
+  </div>
+  <span class="demo">Demo with sample data. Maple Hollow Rescue is fictional.</span>
+</header>
+<nav aria-label="Views">
+  <a href="#match">Match</a><a href="#animals">Animals</a><a href="#fosters">Foster homes</a><a href="#how-it-works">How it works</a>
+</nav>
+<main id="view"></main>
+<footer>Foster Match is an open demo for small rescues. Matching rules are in plain sight under How it works.</footer>
+</div>
+<script>
+// ---------- Sample data (all fictional) ----------
+const ANIMALS=[
+ {id:"a1",name:"The Biscuit Litter",species:"cat",age:"bottle baby",count:4,bottle:true,medical:"none",okDogs:true,okCats:false,okKids:true,separateRoom:true,shy:false,weeks:8,waiting:1,urgent:true,note:"Four kittens, about ten days old. Feeding every three hours."},
+ {id:"a2",name:"Juniper",species:"cat",age:"adult",count:1,bottle:false,medical:"meds",okDogs:false,okCats:true,okKids:true,separateRoom:false,shy:true,weeks:6,waiting:9,urgent:false,note:"Hides for the first week. Needs eye drops twice a day."},
+ {id:"a3",name:"Moose",species:"dog",age:"adult",count:1,bottle:false,medical:"none",okDogs:true,okCats:false,okKids:false,separateRoom:false,shy:false,weeks:4,waiting:5,urgent:false,note:"Seventy pounds of enthusiasm. Knocks small children over."},
+ {id:"a4",name:"Pearl",species:"cat",age:"senior",count:1,bottle:false,medical:"intensive",okDogs:true,okCats:true,okKids:true,separateRoom:false,shy:false,weeks:12,waiting:14,urgent:true,note:"Diabetic. Insulin twice a day and glucose checks."},
+ {id:"a5",name:"Fig and Olive",species:"cat",age:"kitten",count:2,bottle:false,medical:"none",okDogs:true,okCats:true,okKids:true,separateRoom:false,shy:false,weeks:5,waiting:3,urgent:false,note:"Bonded sisters, twelve weeks old. Waiting on spay dates."},
+ {id:"a6",name:"Rooster",species:"dog",age:"puppy",count:1,bottle:false,medical:"meds",okDogs:true,okCats:true,okKids:true,separateRoom:true,shy:false,weeks:3,waiting:2,urgent:true,note:"Recovering from kennel cough. Keep apart from other dogs until cleared."},
+ {id:"a7",name:"Wren",species:"cat",age:"adult",count:1,bottle:false,medical:"none",okDogs:false,okCats:false,okKids:false,separateRoom:false,shy:true,weeks:10,waiting:21,urgent:false,note:"Former barn cat. Wants a quiet house and one patient person."},
+ {id:"a8",name:"Dumpling",species:"dog",age:"senior",count:1,bottle:false,medical:"meds",okDogs:true,okCats:true,okKids:true,separateRoom:false,shy:false,weeks:8,waiting:11,urgent:false,note:"Arthritis pills with breakfast. No stairs."}
+];
+const FOSTERS=[
+ {id:"f1",name:"Dana Whitlock",town:"Slate Falls",miles:6,species:["cat"],hasDogs:false,hasCats:true,youngKids:false,separateRoom:true,bottleExp:true,medical:"intensive",experience:"seasoned",maxWeeks:12,capacity:5,current:0,homeDays:true,prefers:["bottle baby","kitten"],shyOK:true},
+ {id:"f2",name:"Marcus and Ely Tran",town:"Birch Landing",miles:14,species:["cat","dog"],hasDogs:true,hasCats:false,youngKids:true,separateRoom:true,bottleExp:false,medical:"meds",experience:"some",maxWeeks:8,capacity:2,current:0,homeDays:false,prefers:["puppy","adult"],shyOK:false},
+ {id:"f3",name:"Priya Nair",town:"Maple Hollow",miles:3,species:["cat"],hasDogs:false,hasCats:false,youngKids:false,separateRoom:false,bottleExp:false,medical:"meds",experience:"some",maxWeeks:10,capacity:1,current:0,homeDays:true,prefers:["adult","senior"],shyOK:true},
+ {id:"f4",name:"Hal Brennan",town:"Granite Mills",miles:22,species:["dog"],hasDogs:false,hasCats:false,youngKids:false,separateRoom:true,bottleExp:false,medical:"none",experience:"seasoned",maxWeeks:16,capacity:1,current:0,homeDays:true,prefers:["adult","senior"],shyOK:true},
+ {id:"f5",name:"Joanne Okafor",town:"Slate Falls",miles:8,species:["cat"],hasDogs:false,hasCats:false,youngKids:false,separateRoom:true,bottleExp:true,medical:"meds",experience:"seasoned",maxWeeks:10,capacity:6,current:0,homeDays:true,prefers:["bottle baby"],shyOK:false},
+ {id:"f6",name:"The Lindqvist family",town:"Maple Hollow",miles:4,species:["cat","dog"],hasDogs:true,hasCats:true,youngKids:true,separateRoom:false,bottleExp:false,medical:"none",experience:"new",maxWeeks:6,capacity:2,current:0,homeDays:false,prefers:["kitten","puppy"],shyOK:false},
+ {id:"f7",name:"Theo Marsh",town:"Birch Landing",miles:17,species:["cat","dog"],hasDogs:false,hasCats:false,youngKids:false,separateRoom:true,bottleExp:false,medical:"intensive",experience:"seasoned",maxWeeks:16,capacity:2,current:1,homeDays:false,prefers:["senior"],shyOK:true},
+ {id:"f8",name:"Carmen Ruiz",town:"Granite Mills",miles:28,species:["dog"],hasDogs:true,hasCats:false,youngKids:false,separateRoom:true,bottleExp:false,medical:"meds",experience:"some",maxWeeks:6,capacity:1,current:0,homeDays:true,prefers:["puppy"],shyOK:false},
+ {id:"f9",name:"Bea Sorensen",town:"Maple Hollow",miles:2,species:["cat"],hasDogs:false,hasCats:true,youngKids:false,separateRoom:false,bottleExp:false,medical:"none",experience:"new",maxWeeks:6,capacity:2,current:0,homeDays:false,prefers:["kitten"],shyOK:false}
+];
+const MED={none:0,meds:1,intensive:2};
+const MEDLABEL={none:"no medical care",meds:"daily medication",intensive:"intensive care"};
+
+// ---------- Matching rules ----------
+function match(a,f){
+  const blocks=[];
+  if(!f.species.includes(a.species)) blocks.push("Does not foster "+a.species+"s");
+  if(f.capacity-f.current<a.count) blocks.push("Room for "+(f.capacity-f.current)+", needs room for "+a.count);
+  if(!a.okDogs&&f.hasDogs) blocks.push("Has dogs, needs a home without dogs");
+  if(!a.okCats&&f.hasCats) blocks.push("Has cats, needs a home without cats");
+  if(!a.okKids&&f.youngKids) blocks.push("Has young children");
+  if(a.bottle&&!f.bottleExp) blocks.push("No bottle-feeding experience");
+  if(MED[a.medical]>MED[f.medical]) blocks.push("Needs "+MEDLABEL[a.medical]+", home is set up for "+MEDLABEL[f.medical]);
+  if(a.separateRoom&&!f.separateRoom) blocks.push("Needs a separate room");
+  if(a.weeks>f.maxWeeks) blocks.push("Needs "+a.weeks+" weeks, home can commit "+f.maxWeeks);
+  if(blocks.length) return {fit:false,blocks};
+  let s=50; const plus=[],minus=[];
+  if(f.prefers.includes(a.age)){s+=15;plus.push("Prefers fostering "+a.age+(a.age==="bottle baby"?" litters":"s"));}
+  if(f.experience==="seasoned"){s+=10;plus.push("Seasoned foster");}
+  else if(f.experience==="some"){s+=5;plus.push("Has fostered before");}
+  else if(a.medical!=="none"){s-=10;minus.push("First-time foster taking on medication");}
+  if(a.bottle&&f.homeDays){s+=10;plus.push("Home during the day for feedings");}
+  if(a.bottle&&!f.homeDays){s-=10;minus.push("Away during the day, feedings are every few hours");}
+  if(a.shy&&f.shyOK){s+=10;plus.push("Comfortable with shy animals");}
+  if(a.shy&&!f.shyOK){s-=10;minus.push("Has not worked with shy animals");}
+  if(MED[f.medical]>MED[a.medical]&&a.medical!=="none"){s+=5;plus.push("Medical skills beyond what is needed");}
+  if(f.miles<=10){s+=10;plus.push(f.miles+" miles from the rescue");}
+  else if(f.miles<=25){s+=5;plus.push(f.miles+" miles from the rescue");}
+  else minus.push(f.miles+" miles from the rescue, vet trips are a long drive");
+  if(f.maxWeeks-a.weeks>=4){s+=5;plus.push("Can keep going if the stay runs long");}
+  return {fit:true,score:Math.max(0,Math.min(100,s)),plus,minus};
+}
+function rank(a,fosters){
+  const yes=[],no=[];
+  for(const f of fosters){const m=match(a,f);(m.fit?yes:no).push({f,m});}
+  yes.sort((x,y)=>y.m.score-x.m.score||x.f.miles-y.f.miles);
+  return {yes,no};
+}
+if(typeof module!=="undefined"){module.exports={ANIMALS,FOSTERS,match,rank};}
+
+// ---------- Interface ----------
+if(typeof document!=="undefined"){
+const view=document.getElementById("view");
+const state={animal:"a1",species:"all",urgentOnly:false,added:""};
+function h(tag,attrs,...kids){const e=document.createElement(tag);
+  for(const k in (attrs||{})){const v=attrs[k]; if(k==="class")e.className=v; else if(k.startsWith("on"))e.addEventListener(k.slice(2),v); else if(v!==false&&v!=null)e.setAttribute(k,v===true?"":v);}
+  for(const k of kids.flat()){if(k==null||k===false)continue; e.append(k.nodeType?k:document.createTextNode(k));} return e;}
+function needChips(a){const c=[];
+  if(a.urgent)c.push(h("span",{class:"chip bad"},"Urgent"));
+  if(a.bottle)c.push(h("span",{class:"chip warn"},"Bottle feeding"));
+  if(a.medical!=="none")c.push(h("span",{class:"chip warn"},a.medical==="meds"?"Daily meds":"Intensive care"));
+  if(!a.okDogs)c.push(h("span",{class:"chip"},"No dogs"));
+  if(!a.okCats)c.push(h("span",{class:"chip"},"No cats"));
+  if(!a.okKids)c.push(h("span",{class:"chip"},"No young kids"));
+  if(a.separateRoom)c.push(h("span",{class:"chip"},"Separate room"));
+  if(a.shy)c.push(h("span",{class:"chip"},"Shy"));
+  return h("div",{class:"chips"},c);}
+function animalLine(a){return (a.count>1?a.count+" ":"")+a.species+(a.count>1?"s":"")+", "+a.age+" · "+a.weeks+" weeks · waiting "+a.waiting+(a.waiting===1?" day":" days");}
+
+function viewMatch(){
+  const shown=ANIMALS.filter(a=>(state.species==="all"||a.species===state.species)&&(!state.urgentOnly||a.urgent));
+  if(!shown.find(a=>a.id===state.animal)&&shown[0])state.animal=shown[0].id;
+  const a=ANIMALS.find(x=>x.id===state.animal);
+  const left=h("section",{},
+    h("h2",{},"Waiting for a foster home"),
+    h("p",{class:"sub"},shown.length+" of "+ANIMALS.length+" shown"),
+    h("div",{class:"filters"},
+      h("select",{id:"f-species","aria-label":"Species",onchange:e=>{state.species=e.target.value;render();}},
+        ["all","cat","dog"].map(v=>h("option",{value:v,selected:state.species===v},v==="all"?"Cats and dogs":v==="cat"?"Cats":"Dogs"))),
+      h("label",{class:"check"},h("input",{type:"checkbox",id:"f-urgent",checked:state.urgentOnly,onchange:e=>{state.urgentOnly=e.target.checked;render();}}),"Urgent only")),
+    h("div",{class:"list"},shown.map(x=>h("button",{class:"pick"+(x.urgent?" urgent":""),"aria-pressed":String(x.id===state.animal),onclick:()=>{state.animal=x.id;render();}},
+      h("div",{class:"row"},h("h3",{},x.name)),h("div",{class:"meta"},animalLine(x)),needChips(x)))));
+  let right;
+  if(!a||!shown.length){right=h("section",{},h("p",{class:"sub"},"No animals match these filters."));}
+  else{const r=rank(a,FOSTERS);
+    right=h("section",{},
+      h("h2",{},"Foster homes for "+a.name),
+      h("p",{class:"sub"},a.note),
+      h("div",{class:"results"},
+        r.yes.length?r.yes.map(({f,m},i)=>h("div",{class:"card"},
+          h("div",{class:"row"},h("h3",{},(i+1)+". "+f.name),
+            h("div",{class:"score"},h("span",{class:"bar"},h("i",{style:"width:"+m.score+"%"})),m.score+" / 100")),
+          h("div",{class:"meta"},f.town+" · room for "+(f.capacity-f.current)+" · up to "+f.maxWeeks+" weeks"),
+          h("ul",{class:"why"},m.plus.map(t=>h("li",{},t)),m.minus.map(t=>h("li",{class:"minus"},"Check first: "+t)))))
+        :h("div",{class:"card"},h("h3",{},"No home fits yet"),h("p",{class:"sub"},"Every home has at least one conflict. The list below shows what is in the way.")),
+        h("details",{open:!r.yes.length},h("summary",{},r.no.length+" homes ruled out, and why"),
+          r.no.map(({f,m})=>h("div",{class:"no"},h("span",{},f.name),h("span",{},m.blocks.join("; ")))))));}
+  return h("div",{class:"bench"},left,right);}
+
+function viewAnimals(){return h("section",{},h("h2",{},"Animals"),h("p",{class:"sub"},"What each animal needs from a foster home."),
+  h("div",{class:"grid"},ANIMALS.map(a=>h("div",{class:"card"},h("h3",{},a.name),h("div",{class:"meta"},animalLine(a)),needChips(a),h("p",{class:"sub",style:"margin:8px 0 0"},a.note)))));}
+
+function fosterChips(f){const c=[h("span",{class:"chip good"},f.species.map(s=>s+"s").join(" and "))];
+  if(f.bottleExp)c.push(h("span",{class:"chip"},"Bottle feeding"));
+  if(f.medical!=="none")c.push(h("span",{class:"chip"},f.medical==="meds"?"Can give meds":"Intensive care"));
+  if(f.separateRoom)c.push(h("span",{class:"chip"},"Separate room"));
+  if(f.hasDogs)c.push(h("span",{class:"chip"},"Has dogs")); if(f.hasCats)c.push(h("span",{class:"chip"},"Has cats"));
+  if(f.youngKids)c.push(h("span",{class:"chip"},"Young kids")); if(f.homeDays)c.push(h("span",{class:"chip"},"Home days"));
+  if(f.shyOK)c.push(h("span",{class:"chip"},"Good with shy"));
+  return h("div",{class:"chips"},c);}
+function viewFosters(){
+  const chk=(id,text)=>h("label",{class:"check"},h("input",{type:"checkbox",id}),text);
+  const sel=(id,label,opts)=>h("label",{},label,h("select",{id},opts.map(([v,t])=>h("option",{value:v},t))));
+  const form=h("form",{onsubmit:e=>{e.preventDefault();const g=id=>document.getElementById(id);
+      const name=g("n-name").value.trim(); if(!name){g("n-name").focus();return;}
+      const sp=g("n-species").value;
+      FOSTERS.push({id:"f"+Date.now(),name,town:g("n-town").value.trim()||"Maple Hollow",miles:Math.max(0,+g("n-miles").value||5),species:sp==="both"?["cat","dog"]:[sp],
+        hasDogs:g("n-dogs").checked,hasCats:g("n-cats").checked,youngKids:g("n-kids").checked,separateRoom:g("n-room").checked,bottleExp:g("n-bottle").checked,
+        medical:g("n-med").value,experience:g("n-exp").value,maxWeeks:Math.max(1,+g("n-weeks").value||6),capacity:Math.max(1,+g("n-cap").value||1),current:0,
+        homeDays:g("n-days").checked,prefers:[g("n-pref").value],shyOK:g("n-shy").checked});
+      state.added=name+" was added. Open Match to see where this home ranks.";render();}},
+    h("label",{},"Name",h("input",{type:"text",id:"n-name",required:true})),
+    h("label",{},"Town",h("input",{type:"text",id:"n-town"})),
+    h("label",{},"Miles from the rescue",h("input",{type:"number",id:"n-miles",min:"0",value:"5"})),
+    sel("n-species","Will foster",[["cat","Cats"],["dog","Dogs"],["both","Cats and dogs"]]),
+    sel("n-exp","Experience",[["new","First time"],["some","Has fostered before"],["seasoned","Seasoned"]]),
+    sel("n-med","Medical comfort",[["none","None"],["meds","Can give daily meds"],["intensive","Intensive care"]]),
+    sel("n-pref","Prefers",[["kitten","Kittens"],["bottle baby","Bottle babies"],["puppy","Puppies"],["adult","Adults"],["senior","Seniors"]]),
+    h("label",{},"Longest stay, in weeks",h("input",{type:"number",id:"n-weeks",min:"1",value:"6"})),
+    h("label",{},"Animals at once",h("input",{type:"number",id:"n-cap",min:"1",value:"1"})),
+    chk("n-room","Has a separate room"),chk("n-bottle","Has bottle-fed before"),chk("n-days","Home during the day"),
+    chk("n-dogs","Has dogs"),chk("n-cats","Has cats"),chk("n-kids","Has young children"),chk("n-shy","Comfortable with shy animals"),
+    h("button",{class:"go",type:"submit"},"Add foster home"));
+  return h("section",{},h("h2",{},"Foster homes"),h("p",{class:"sub"},FOSTERS.length+" homes on file."),
+    h("div",{class:"grid"},FOSTERS.map(f=>h("div",{class:"card"},h("h3",{},f.name),
+      h("div",{class:"meta"},f.town+" · "+f.miles+" miles · room for "+(f.capacity-f.current)+" · up to "+f.maxWeeks+" weeks"),fosterChips(f)))),
+    h("div",{class:"card",style:"margin-top:16px"},h("h2",{},"Add a foster home"),
+      h("p",{class:"sub"},"Stays in this browser tab only. Nothing is sent anywhere."),form,
+      state.added?h("p",{class:"note",role:"status"},state.added):null));}
+
+function viewHow(){return h("section",{class:"how"},h("h2",{},"How matching works"),
+  h("p",{},"Matching runs in two passes. The first pass removes homes that cannot work. The second ranks the homes that are left."),
+  h("h3",{},"Pass one: conflicts"),
+  h("ul",{},["The home does not foster that species.","The home has no room for the animal or the whole litter.","The animal cannot live with dogs, cats or young children, and the home has them.","Bottle babies need someone who has bottle-fed before.","The medical care needed is beyond what the home is set up for.","The animal needs a separate room and the home has none.","The stay is longer than the home can commit to."].map(t=>h("li",{},t))),
+  h("h3",{},"Pass two: ranking"),
+  h("ul",{},["Every home that passes starts at 50 points.","Points are added for a preferred age group, foster experience, being home in the day for bottle feedings, comfort with shy animals, spare medical skill, a short drive, and room to extend the stay.","Points come off for a first-time foster taking on medication, shy animals in a home new to them, and bottle babies in a home that is empty all day.","Anything that took points off is listed as a check-first note, so the coordinator makes the final call."].map(t=>h("li",{},t))),
+  h("h3",{},"What a real version would add"),
+  h("ul",{},["Sign-in for coordinators, and a form fosters fill in themselves.","Saved placements, so room for more animals updates on its own.","A text or email to the top three homes when an urgent animal comes in."].map(t=>h("li",{},t))));}
+
+const ROUTES={"match":viewMatch,"animals":viewAnimals,"fosters":viewFosters,"how-it-works":viewHow};
+function render(){const r=(location.hash||"#match").slice(1); const key=ROUTES[r]?r:"match";
+  document.querySelectorAll("nav a").forEach(a=>{if(a.getAttribute("href")==="#"+key)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");});
+  view.replaceChildren(ROUTES[key]()); if(key!=="fosters")state.added="";}
+window.addEventListener("hashchange",render); render();
+}
+</script>
+</body>
+</html>
